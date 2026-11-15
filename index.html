@@ -258,7 +258,18 @@
     </div>
 
     <div class="hud-sub-info">
-      <span id="zoom-display">Zoom 2.1</span>
+      <div class="zoom-stepper" role="group" aria-label="Map zoom and navigation">
+        <button type="button" id="btn-zoom-out" class="zoom-stepper-btn" title="Zoom out (−)" aria-label="Zoom out">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        </button>
+        <span id="zoom-display">Zoom 2.1</span>
+        <button type="button" id="btn-zoom-in" class="zoom-stepper-btn" title="Zoom in (+)" aria-label="Zoom in">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        </button>
+        <button type="button" id="btn-reset-north" class="zoom-stepper-btn compass-btn" title="Reset North & Pitch" aria-label="Reset North and Pitch">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><polygon points="12 6 15 13 12 11 9 13 12 6" fill="currentColor"/></svg>
+        </button>
+      </div>
       <span id="map-source">AWS 3D DEM</span>
     </div>
   </section>

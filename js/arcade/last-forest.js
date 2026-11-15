@@ -73,11 +73,16 @@ export class LastForestGame {
   }
 
   initInput() {
+    this.mouseTarget = { active: false, x: 0, y: 0 };
+
     this.onKeyDown = (e) => {
       if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') this.keys.left = true;
       if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') this.keys.right = true;
       if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') this.keys.up = true;
       if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') this.keys.down = true;
+      if (e.key === 'r' || e.key === 'R') {
+        if (this.isVictory || this.isGameOver) this.restart();
+      }
       if (e.key === 'Escape') { this.stop(); this.onExit?.(); }
     };
     this.onKeyUp = (e) => {
@@ -86,20 +91,81 @@ export class LastForestGame {
       if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') this.keys.up = false;
       if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') this.keys.down = false;
     };
+
+    const updatePointerPos = (e) => {
+      if (!this.canvas?.getBoundingClientRect) return;
+      const rect = this.canvas.getBoundingClientRect();
+      if (!rect.width || !rect.height) return;
+      this.mouseTarget.active = true;
+      this.mouseTarget.x = (e.clientX - rect.left) * (this.canvas.width / rect.width);
+      this.mouseTarget.y = (e.clientY - rect.top) * (this.canvas.height / rect.height);
+    };
+
+    this.onPointerDown = (e) => {
+      if (this.isVictory || this.isGameOver) {
+        this.restart();
+        return;
+      }
+      updatePointerPos(e);
+    };
+
+    this.onPointerMove = (e) => {
+      if (e.buttons > 0 || this.mouseTarget.active) {
+        updatePointerPos(e);
+      }
+    };
+
+    this.onPointerUp = () => {
+      this.mouseTarget.active = false;
+    };
+
     window.addEventListener('keydown', this.onKeyDown);
     window.addEventListener('keyup', this.onKeyUp);
+    this.canvas?.addEventListener?.('pointerdown', this.onPointerDown);
+    this.canvas?.addEventListener?.('pointermove', this.onPointerMove);
+    window.addEventListener('pointerup', this.onPointerUp);
+    window.addEventListener('pointercancel', this.onPointerUp);
+  }
+
+  restart() {
+    this.isVictory = false;
+    this.isGameOver = false;
+    this.seed.x = this.canvas.width / 2;
+    this.seed.y = this.canvas.height * 0.45;
+    this.seed.vx = 0;
+    this.seed.vy = 0;
+    this.seed.tilt = 0;
+    this.seed.altitude = 100;
+    this.seed.seedsPlanted = 0;
+    this.distance = 0;
+    this.mouseTarget.active = false;
+    this.initForest();
   }
 
   update(dt) {
     if (this.isVictory || this.isGameOver) return;
 
-    // Full 2D Aerodynamic Banking Flight
+    // Full 2D Aerodynamic Banking Flight (Keyboard or Mouse Pointer)
     if (this.keys.left) {
       this.seed.vx -= 420 * dt;
       this.seed.tilt = Math.max(-0.45, this.seed.tilt - 2.5 * dt);
     } else if (this.keys.right) {
       this.seed.vx += 420 * dt;
       this.seed.tilt = Math.min(0.45, this.seed.tilt + 2.5 * dt);
+    } else if (this.mouseTarget?.active) {
+      const dx = this.mouseTarget.x - this.seed.x;
+      if (Math.abs(dx) > 15) {
+        if (dx < 0) {
+          this.seed.vx -= 420 * dt;
+          this.seed.tilt = Math.max(-0.45, this.seed.tilt - 2.5 * dt);
+        } else {
+          this.seed.vx += 420 * dt;
+          this.seed.tilt = Math.min(0.45, this.seed.tilt + 2.5 * dt);
+        }
+      } else {
+        this.seed.vx *= 0.85;
+        this.seed.tilt *= 0.82;
+      }
     } else {
       this.seed.vx *= 0.85;
       this.seed.tilt *= 0.82;
@@ -109,6 +175,17 @@ export class LastForestGame {
       this.seed.vy -= 260 * dt;
     } else if (this.keys.down) {
       this.seed.vy += 260 * dt;
+    } else if (this.mouseTarget?.active) {
+      const dy = this.mouseTarget.y - this.seed.y;
+      if (Math.abs(dy) > 15) {
+        if (dy < 0) {
+          this.seed.vy -= 260 * dt;
+        } else {
+          this.seed.vy += 260 * dt;
+        }
+      } else {
+        this.seed.vy *= 0.85;
+      }
     } else {
       this.seed.vy *= 0.85;
     }
@@ -200,5 +277,9 @@ export class LastForestGame {
     if (this.rafId) cancelAnimationFrame(this.rafId);
     window.removeEventListener('keydown', this.onKeyDown);
     window.removeEventListener('keyup', this.onKeyUp);
+    this.canvas?.removeEventListener?.('pointerdown', this.onPointerDown);
+    this.canvas?.removeEventListener?.('pointermove', this.onPointerMove);
+    window.removeEventListener('pointerup', this.onPointerUp);
+    window.removeEventListener('pointercancel', this.onPointerUp);
   }
 }

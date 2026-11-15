@@ -151,10 +151,22 @@ export class CloudCourierGame {
       if (e.key === 'Escape') { this.stop(); this.onExit?.(); }
     };
 
-    this.onPointerDown = () => this.flap();
+    this.onPointerDown = () => {
+      if (this.isGameOver) {
+        this.restart();
+        return;
+      }
+      this.flap();
+    };
+
+    this.onWheel = (e) => {
+      e.preventDefault();
+      if (e.deltaY < 0) this.flap();
+    };
 
     window.addEventListener('keydown', this.onKeyDown);
     this.canvas?.addEventListener?.('pointerdown', this.onPointerDown);
+    this.canvas?.addEventListener?.('wheel', this.onWheel, { passive: false });
   }
 
   restart() {
@@ -338,5 +350,6 @@ export class CloudCourierGame {
     if (this.rafId) cancelAnimationFrame(this.rafId);
     window.removeEventListener('keydown', this.onKeyDown);
     this.canvas?.removeEventListener?.('pointerdown', this.onPointerDown);
+    this.canvas?.removeEventListener?.('wheel', this.onWheel);
   }
 }

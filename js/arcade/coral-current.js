@@ -296,7 +296,7 @@ export class CoralCurrentGame {
     };
 
     this.onPointerDown = (e) => {
-      const rect = this.canvas.getBoundingClientRect();
+      const rect = this.canvas?.getBoundingClientRect ? this.canvas.getBoundingClientRect() : { left: 0, top: 0, width: this.canvas.width, height: this.canvas.height };
       const clickY = e.clientY - rect.top;
       const clickX = e.clientX - rect.left;
 
@@ -305,10 +305,13 @@ export class CoralCurrentGame {
         return;
       }
 
-      if (clickX > this.canvas.width * 0.7) {
+      if (clickX < rect.width * 0.22) {
+        // Left side: Brake & Hover
+        this.turtle.isBraking = true;
+      } else if (clickX > rect.width * 0.7) {
         // Right side: Hydro Dash
         this.dash();
-      } else if (clickY > this.canvas.height * 0.6) {
+      } else if (clickY > rect.height * 0.6) {
         // Bottom half: Dive-Bomb
         this.diveBomb();
       } else {
@@ -317,9 +320,31 @@ export class CoralCurrentGame {
       }
     };
 
+    this.onPointerUp = () => {
+      this.turtle.isBraking = false;
+    };
+
+    this.onWheel = (e) => {
+      e.preventDefault();
+      if (e.deltaY < -8) {
+        this.paddle();
+      } else if (e.deltaY > 8) {
+        this.diveBomb();
+      }
+    };
+
+    this.onContextMenu = (e) => {
+      e.preventDefault();
+      this.dash();
+    };
+
     window.addEventListener('keydown', this.onKeyDown);
     window.addEventListener('keyup', this.onKeyUp);
     this.canvas?.addEventListener?.('pointerdown', this.onPointerDown);
+    window.addEventListener('pointerup', this.onPointerUp);
+    window.addEventListener('pointercancel', this.onPointerUp);
+    this.canvas?.addEventListener?.('wheel', this.onWheel, { passive: false });
+    this.canvas?.addEventListener?.('contextmenu', this.onContextMenu);
   }
 
   restart() {
@@ -607,5 +632,9 @@ export class CoralCurrentGame {
     window.removeEventListener('keydown', this.onKeyDown);
     window.removeEventListener('keyup', this.onKeyUp);
     this.canvas?.removeEventListener?.('pointerdown', this.onPointerDown);
+    window.removeEventListener('pointerup', this.onPointerUp);
+    window.removeEventListener('pointercancel', this.onPointerUp);
+    this.canvas?.removeEventListener?.('wheel', this.onWheel);
+    this.canvas?.removeEventListener?.('contextmenu', this.onContextMenu);
   }
 }

@@ -47,10 +47,15 @@ export class OzoneDriftGame {
   }
 
   initInput() {
+    this.mouseState = { active: false, aiming: false, x: 0, y: 0 };
+
     this.onKeyDown = (e) => {
       if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') this.keys.left = true;
       if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') this.keys.right = true;
       if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') this.keys.thrust = true;
+      if (e.key === 'r' || e.key === 'R') {
+        if (this.isVictory) this.restart();
+      }
       if (e.key === 'Escape') { this.stop(); this.onExit?.(); }
     };
     this.onKeyUp = (e) => {
@@ -58,8 +63,49 @@ export class OzoneDriftGame {
       if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') this.keys.right = false;
       if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') this.keys.thrust = false;
     };
+
+    const updatePointer = (e) => {
+      if (!this.canvas?.getBoundingClientRect) return;
+      const rect = this.canvas.getBoundingClientRect();
+      if (!rect.width || !rect.height) return;
+      this.mouseState.aiming = true;
+      this.mouseState.x = (e.clientX - rect.left) * (this.canvas.width / rect.width);
+      this.mouseState.y = (e.clientY - rect.top) * (this.canvas.height / rect.height);
+    };
+
+    this.onPointerDown = (e) => {
+      if (this.isVictory) {
+        this.restart();
+        return;
+      }
+      this.mouseState.active = true;
+      updatePointer(e);
+    };
+
+    this.onPointerMove = (e) => {
+      updatePointer(e);
+    };
+
+    this.onPointerUp = () => {
+      this.mouseState.active = false;
+    };
+
     window.addEventListener('keydown', this.onKeyDown);
     window.addEventListener('keyup', this.onKeyUp);
+    this.canvas?.addEventListener?.('pointerdown', this.onPointerDown);
+    this.canvas?.addEventListener?.('pointermove', this.onPointerMove);
+    window.addEventListener('pointerup', this.onPointerUp);
+    window.addEventListener('pointercancel', this.onPointerUp);
+  }
+
+  restart() {
+    this.isVictory = false;
+    this.probe.x = this.canvas.width / 2;
+    this.probe.y = this.canvas.height / 2;
+    this.probe.angle = 0;
+    this.canistersCollected = 0;
+    this.mouseState.active = false;
+    this.initSky();
   }
 
   update(dt) {
@@ -68,7 +114,20 @@ export class OzoneDriftGame {
     if (this.keys.left) this.probe.angle -= 2.8 * dt;
     if (this.keys.right) this.probe.angle += 2.8 * dt;
 
-    if (this.keys.thrust) {
+    if (!this.keys.left && !this.keys.right && this.mouseState?.aiming) {
+      const dx = this.mouseState.x - this.probe.x;
+      const dy = this.mouseState.y - this.probe.y;
+      if (Math.hypot(dx, dy) > 15) {
+        const targetAngle = Math.atan2(dy, dx);
+        let diff = targetAngle - this.probe.angle;
+        while (diff < -Math.PI) diff += Math.PI * 2;
+        while (diff > Math.PI) diff -= Math.PI * 2;
+        this.probe.angle += Math.sign(diff) * Math.min(Math.abs(diff), 4.5 * dt);
+      }
+    }
+
+    const thrusting = this.keys.thrust || this.mouseState?.active;
+    if (thrusting) {
       this.probe.x += Math.cos(this.probe.angle) * this.probe.speed * dt;
       this.probe.y += Math.sin(this.probe.angle) * this.probe.speed * dt;
     } else {
@@ -130,5 +189,9 @@ export class OzoneDriftGame {
     if (this.rafId) cancelAnimationFrame(this.rafId);
     window.removeEventListener('keydown', this.onKeyDown);
     window.removeEventListener('keyup', this.onKeyUp);
+    this.canvas?.removeEventListener?.('pointerdown', this.onPointerDown);
+    this.canvas?.removeEventListener?.('pointermove', this.onPointerMove);
+    window.removeEventListener('pointerup', this.onPointerUp);
+    window.removeEventListener('pointercancel', this.onPointerUp);
   }
 }

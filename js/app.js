@@ -1547,6 +1547,20 @@ class App {
       });
     }
 
+    // Zoom stepper and compass controls
+    document.getElementById('btn-zoom-in')?.addEventListener('click', () => {
+      if (typeof this.map?.zoomIn === 'function') this.map.zoomIn({ duration: 250 });
+      else if (this.canvasGlobe) this.canvasGlobe.setZoom(this.canvasGlobe.zoom + 0.5);
+    });
+    document.getElementById('btn-zoom-out')?.addEventListener('click', () => {
+      if (typeof this.map?.zoomOut === 'function') this.map.zoomOut({ duration: 250 });
+      else if (this.canvasGlobe) this.canvasGlobe.setZoom(this.canvasGlobe.zoom - 0.5);
+    });
+    document.getElementById('btn-reset-north')?.addEventListener('click', () => {
+      if (typeof this.map?.resetNorthPitch === 'function') this.map.resetNorthPitch({ duration: 400 });
+      else if (this.canvasGlobe) this.canvasGlobe.setCenter([0, 15]);
+    });
+
     const visualizerEl = document.getElementById('lofi-visualizer');
     if (visualizerEl) {
       this.sound.onVisualizer((bands) => {

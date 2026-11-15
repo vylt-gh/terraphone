@@ -145,6 +145,8 @@ export class FirelineGame {
   }
 
   initInput() {
+    this.pointerState = { active: false, x: 0, y: 0 };
+
     this.onKeyDown = (e) => {
       if (e.repeat) return;
       if (e.key === 'w' || e.key === 'W' || e.key === 'ArrowUp') this.keys.up = true;
@@ -164,8 +166,50 @@ export class FirelineGame {
       if (e.key === 'd' || e.key === 'D' || e.key === 'ArrowRight') this.keys.right = false;
     };
 
+    this.onPointerDown = (e) => {
+      this.pointerState.active = true;
+      this.pointerState.x = e.clientX;
+      this.pointerState.y = e.clientY;
+      if (this.canvas?.setPointerCapture && e.pointerId != null) {
+        try { this.canvas.setPointerCapture(e.pointerId); } catch {}
+      }
+    };
+
+    this.onPointerMove = (e) => {
+      if (this.pointerState.active) {
+        this.pointerState.x = e.clientX;
+        this.pointerState.y = e.clientY;
+      }
+    };
+
+    this.onPointerUp = (e) => {
+      this.pointerState.active = false;
+      if (this.canvas?.releasePointerCapture && e.pointerId != null) {
+        try { this.canvas.releasePointerCapture(e.pointerId); } catch {}
+      }
+    };
+
     window.addEventListener('keydown', this.onKeyDown);
     window.addEventListener('keyup', this.onKeyUp);
+    this.canvas?.addEventListener?.('pointerdown', this.onPointerDown);
+    window.addEventListener('pointermove', this.onPointerMove);
+    window.addEventListener('pointerup', this.onPointerUp);
+    window.addEventListener('pointercancel', this.onPointerUp);
+  }
+
+  restart() {
+    this.isVictory = false;
+    this.player.x = 0;
+    this.player.y = 0;
+    this.player.vx = 0;
+    this.player.vy = 0;
+    this.player.seedsCarried = 0;
+    this.player.isFirefly = false;
+    this.player.fireflyTimer = 0;
+    this.seedsSaved = 0;
+    this.distanceTraveled = 0;
+    this.forestsRestored = 0;
+    this.initMap();
   }
 
   triggerFireflyMode(duration = 10) {
@@ -237,13 +281,26 @@ export class FirelineGame {
   update(dt) {
     if (this.isVictory) return;
 
-    // Movement: Convert screen intent (WASD / Arrows) to isometric world direction
+    // Movement: Convert screen intent (WASD / Arrows or Mouse Pointer) to isometric world direction
     let sx = 0;
     let sy = 0;
     if (this.keys.up) sy -= 1;
     if (this.keys.down) sy += 1;
     if (this.keys.left) sx -= 1;
     if (this.keys.right) sx += 1;
+
+    if (this.pointerState?.active && sx === 0 && sy === 0 && this.canvas?.getBoundingClientRect) {
+      const rect = this.canvas.getBoundingClientRect();
+      const cx = rect.left + rect.width / 2;
+      const cy = rect.top + rect.height / 2;
+      const dx = this.pointerState.x - cx;
+      const dy = this.pointerState.y - cy;
+      const dist = Math.hypot(dx, dy);
+      if (dist > 15) {
+        sx = dx / dist;
+        sy = dy / dist;
+      }
+    }
 
     const curSpeed = this.player.isFirefly ? this.player.speed * 1.5 : this.player.speed;
 
@@ -376,6 +433,10 @@ export class FirelineGame {
     }
     window.removeEventListener('keydown', this.onKeyDown);
     window.removeEventListener('keyup', this.onKeyUp);
+    this.canvas?.removeEventListener?.('pointerdown', this.onPointerDown);
+    window.removeEventListener('pointermove', this.onPointerMove);
+    window.removeEventListener('pointerup', this.onPointerUp);
+    window.removeEventListener('pointercancel', this.onPointerUp);
 
     if (this.audioNodes && this.audioCtx) {
       try {

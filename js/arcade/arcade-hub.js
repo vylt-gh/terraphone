@@ -33,7 +33,7 @@ export const ARCADE_GAMES = [
     nasaData: 'NASA FIRMS Active Fire Satellite Data',
     objective: 'Carry forest seeds to the three springs. Avoid heat pockets and collect golden fireflies for a burst of speed.',
     controls: [
-      { key: 'W / A / S / D or Arrows', desc: 'Move Spirit Wanderer' },
+      { key: 'Mouse Click / Drag or WASD', desc: 'Guide Spirit Wanderer' },
       { key: 'Spring Proximity', desc: 'Automatically deposits seeds' },
       { key: 'Golden Seed', desc: 'Golden Firefly high-speed flight boost' }
     ],
@@ -46,10 +46,9 @@ export const ARCADE_GAMES = [
     nasaData: 'NASA ECOSTRESS Land Surface Temp',
     objective: 'Change lanes to avoid vans. Jump heat cracks, slide under steam vents and aim for the next 500 metres.',
     controls: [
-      { key: 'A / D or ← / →', desc: 'Snap Between 5 Lanes' },
-      { key: 'W / ↑ / Space', desc: 'Jump Over Road Hazards' },
-      { key: 'S / ↓', desc: 'Slide Under Steam Vents / Fast Fall' },
-      { key: 'Swipe (Touch)', desc: 'Left / Right / Jump / Slide' }
+      { key: 'Mouse Click / Swipe or ← / →', desc: 'Change Lanes, Jump & Slide' },
+      { key: 'W / ↑ / Space or Wheel Up', desc: 'Jump Over Road Hazards' },
+      { key: 'S / ↓ or Wheel Down', desc: 'Slide Under Steam Vents / Fast Fall' }
     ],
     environmentalImpact: 'Driven by NASA ECOSTRESS thermal measurements aboard the ISS. Unshaded asphalt surfaces can exceed 50°C (122°F), whereas tree-shaded parks lower ambient temperatures by up to 12°C, demonstrating the lifesaving power of urban greening.'
   },
@@ -60,7 +59,7 @@ export const ARCADE_GAMES = [
     nasaData: 'NASA OMI SO₂/NO₂ & GPM',
     objective: 'Guide a cloud through gaps between smokestacks. Collect clean vapour and avoid polluted plumes.',
     controls: [
-      { key: 'Space / W / ↑', desc: 'Ascend & Flap' },
+      { key: 'Mouse Click / Wheel or Space', desc: 'Ascend & Flap' },
       { key: 'Gravity', desc: 'Natural Aerodynamic Glide' }
     ],
     environmentalImpact: 'Incorporates NASA Aura OMI tropospheric air quality satellite measurements. Clean air corridors demonstrate how reducing factory emissions and vehicular pollutants prevents acid rain and protects human respiratory health.'
@@ -72,8 +71,9 @@ export const ARCADE_GAMES = [
     nasaData: 'NASA Ozone Watch & Aura OMI',
     objective: 'Turn the probe and fire its thruster to collect 15 ozone samples.',
     controls: [
+      { key: 'Mouse Aim & Click or A / D / W', desc: 'Rotate & Fire Thruster' },
       { key: 'A / D or ← / →', desc: 'Rotate the probe' },
-      { key: 'W or ↑', desc: 'Fire the thruster' }
+      { key: 'W or ↑ or Hold Click', desc: 'Fire the thruster' }
     ],
     environmentalImpact: 'Reflects NASA Ozone Watch daily satellite observations. The stratospheric ozone layer absorbs harmful ultraviolet-B radiation, safeguarding terrestrial ecosystems, marine phytoplankton, and human skin health.'
   },
@@ -84,10 +84,11 @@ export const ARCADE_GAMES = [
     nasaData: 'NOAA Coral Reef Watch Bleaching Stress',
     objective: 'Swim through gaps in the reef. Dash past predators and find cool upwellings to revive bleached coral.',
     controls: [
-      { key: 'Space / ↑ / W', desc: 'Paddle Upward' },
-      { key: 'S / ↓', desc: 'Fast Dive-Bomb (Evade Predators & Ceiling Corals)' },
-      { key: 'D / Shift / →', desc: 'Hydro-Dash Jet (Invulnerable Burst)' },
-      { key: 'A / ←', desc: 'Brake & Hover (Time Gaps)' }
+      { key: 'Mouse Click Zones or Space / S / D', desc: 'Paddle, Dive, Dash & Brake' },
+      { key: 'Space / ↑ / W / Wheel Up', desc: 'Paddle Upward' },
+      { key: 'S / ↓ / Wheel Down', desc: 'Fast Dive-Bomb (Evade Predators)' },
+      { key: 'D / Shift / → / Right-Click', desc: 'Hydro-Dash Jet (Invulnerable Burst)' },
+      { key: 'A / ← / Left Click Zone', desc: 'Brake & Hover (Time Gaps)' }
     ],
     environmentalImpact: 'Incorporates NOAA Coral Reef Watch 5km satellite sea surface temperature anomaly metrics. Deep cold-water upwellings provide critical thermal refugia that rescue fragile reef ecosystems from devastating marine heatwaves.'
   },
@@ -98,6 +99,7 @@ export const ARCADE_GAMES = [
     nasaData: 'NASA / USGS Landsat Forest Canopy Cover',
     objective: 'Ride updrafts as a sycamore seed. Sow ten clearings before you lose altitude.',
     controls: [
+      { key: 'Mouse Pointer or A / D / W / S', desc: 'Bank, Steer & Pitch' },
       { key: 'A / D or ← / →', desc: 'Bank & Steer' },
       { key: 'W / S or ↑ / ↓', desc: 'Pitch Up / Dive for Speed' }
     ],
@@ -166,6 +168,7 @@ export class ArcadeHub {
           </div>
 
           <canvas id="arcade-canvas" class="arcade-canvas"></canvas>
+          <div id="arcade-onscreen-controls" class="arcade-onscreen-controls"></div>
           <div id="arcade-result" class="arcade-result" hidden>
             <div class="arcade-result-card">
               <h2 id="arcade-result-title" aria-live="polite"></h2>
@@ -631,8 +634,10 @@ export class ArcadeHub {
       game.art = preparedArt;
       game.onResultChange = finished => {
         const result = document.getElementById('arcade-result');
+        const controlsEl = document.getElementById('arcade-onscreen-controls');
         result.hidden = !finished;
         pauseBtn.hidden = finished;
+        if (controlsEl) controlsEl.style.display = finished ? 'none' : '';
         if (finished) {
           document.getElementById('arcade-result-title').textContent =
             gameId === 'last_forest' && game.isVictory ? 'The canopy is growing' : finishTitles[gameId];
@@ -642,6 +647,7 @@ export class ArcadeHub {
         }
       };
       this.activeGameInstance.start();
+      this.renderOnScreenControls(gameId);
       canvas.tabIndex = -1;
       canvas.focus({ preventScroll: true });
     } catch (err) {
@@ -651,8 +657,88 @@ export class ArcadeHub {
     }
   }
 
+  renderOnScreenControls(gameId) {
+    const container = document.getElementById('arcade-onscreen-controls');
+    if (!container) return;
+    container.innerHTML = '';
+    const game = this.activeGameInstance;
+    if (!game) return;
+
+    const createBtn = (label, title, onPress, onRelease) => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'arcade-virtual-btn';
+      btn.title = title;
+      btn.setAttribute('aria-label', title);
+      btn.innerHTML = `<span>${label}</span>`;
+      btn.addEventListener('pointerdown', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        onPress?.();
+      });
+      if (onRelease) {
+        btn.addEventListener('pointerup', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          onRelease?.();
+        });
+        btn.addEventListener('pointerleave', () => onRelease?.());
+        btn.addEventListener('pointercancel', () => onRelease?.());
+      }
+      return btn;
+    };
+
+    if (gameId === 'fireline') {
+      const bar = document.createElement('div');
+      bar.className = 'arcade-action-bar arcade-dpad-bar';
+      bar.appendChild(createBtn('◀', 'Move Left (A / ←)', () => { game.keys.left = true; }, () => { game.keys.left = false; }));
+      bar.appendChild(createBtn('▲', 'Move Up (W / ↑)', () => { game.keys.up = true; }, () => { game.keys.up = false; }));
+      bar.appendChild(createBtn('▼', 'Move Down (S / ↓)', () => { game.keys.down = true; }, () => { game.keys.down = false; }));
+      bar.appendChild(createBtn('▶', 'Move Right (D / →)', () => { game.keys.right = true; }, () => { game.keys.right = false; }));
+      container.appendChild(bar);
+    } else if (gameId === 'heat_escape') {
+      const bar = document.createElement('div');
+      bar.className = 'arcade-action-bar';
+      bar.appendChild(createBtn('◀ Left', 'Lane Left (A / ←)', () => game.changeLane(-1)));
+      bar.appendChild(createBtn('▲ Jump', 'Jump (W / ↑ / Space)', () => game.jump()));
+      bar.appendChild(createBtn('▼ Slide', 'Slide / Fast Fall (S / ↓)', () => game.slide()));
+      bar.appendChild(createBtn('Right ▶', 'Lane Right (D / →)', () => game.changeLane(1)));
+      container.appendChild(bar);
+    } else if (gameId === 'cloud_courier') {
+      const bar = document.createElement('div');
+      bar.className = 'arcade-action-bar';
+      bar.appendChild(createBtn('☁ Flap / Ascend', 'Flap Wings (Click / Space)', () => game.flap()));
+      container.appendChild(bar);
+    } else if (gameId === 'coral_current') {
+      const bar = document.createElement('div');
+      bar.className = 'arcade-action-bar';
+      bar.appendChild(createBtn('⏸ Brake', 'Brake & Hover (A / ←)', () => { game.turtle.isBraking = true; }, () => { game.turtle.isBraking = false; }));
+      bar.appendChild(createBtn('▲ Paddle', 'Paddle Up (Space / W / ↑)', () => game.paddle()));
+      bar.appendChild(createBtn('▼ Dive', 'Dive-Bomb (S / ↓)', () => game.diveBomb()));
+      bar.appendChild(createBtn('⚡ Dash', 'Hydro-Dash (D / Shift / →)', () => game.dash()));
+      container.appendChild(bar);
+    } else if (gameId === 'last_forest') {
+      const bar = document.createElement('div');
+      bar.className = 'arcade-action-bar';
+      bar.appendChild(createBtn('◀ Bank Left', 'Bank Left (A / ←)', () => { game.keys.left = true; }, () => { game.keys.left = false; }));
+      bar.appendChild(createBtn('▲ Pitch Up', 'Pitch Up (W / ↑)', () => { game.keys.up = true; }, () => { game.keys.up = false; }));
+      bar.appendChild(createBtn('▼ Dive Down', 'Dive (S / ↓)', () => { game.keys.down = true; }, () => { game.keys.down = false; }));
+      bar.appendChild(createBtn('Bank Right ▶', 'Bank Right (D / →)', () => { game.keys.right = true; }, () => { game.keys.right = false; }));
+      container.appendChild(bar);
+    } else if (gameId === 'ozone_drift') {
+      const bar = document.createElement('div');
+      bar.className = 'arcade-action-bar';
+      bar.appendChild(createBtn('⟲ Turn Left', 'Rotate Left (A / ←)', () => { game.keys.left = true; }, () => { game.keys.left = false; }));
+      bar.appendChild(createBtn('🚀 Thrust', 'Fire Thruster (W / ↑)', () => { game.keys.thrust = true; }, () => { game.keys.thrust = false; }));
+      bar.appendChild(createBtn('Turn Right ⟳', 'Rotate Right (D / →)', () => { game.keys.right = true; }, () => { game.keys.right = false; }));
+      container.appendChild(bar);
+    }
+  }
+
   closeActiveGame() {
     this.pendingLaunch = null;
+    const controlsEl = document.getElementById('arcade-onscreen-controls');
+    if (controlsEl) controlsEl.innerHTML = '';
     const result = document.getElementById('arcade-result');
     if (result) result.hidden = true;
     const lastGame = this.activeGameId;

@@ -87,22 +87,78 @@ export class HeatEscapeGame {
       }
     };
 
-    // Mobile Swipe Gesture Support (Subway Surfers feel)
+    // Mouse & Touch Gesture Support (Drag / Swipe / Click Zones / Wheel)
+    this.pointerStartX = null;
+    this.pointerStartY = null;
+
+    this.onPointerDown = (e) => {
+      if (this.isGameOver || this.isVictory) {
+        this.restart();
+        return;
+      }
+      this.pointerStartX = e.clientX;
+      this.pointerStartY = e.clientY;
+    };
+
+    this.onPointerUp = (e) => {
+      if (this.pointerStartX == null) return;
+      const dx = e.clientX - this.pointerStartX;
+      const dy = e.clientY - this.pointerStartY;
+      const absX = Math.abs(dx);
+      const absY = Math.abs(dy);
+      this.pointerStartX = null;
+      this.pointerStartY = null;
+
+      if (Math.max(absX, absY) > 22) {
+        // Drag / Swipe gesture
+        if (absX > absY) {
+          dx < 0 ? this.changeLane(-1) : this.changeLane(1);
+        } else {
+          dy < 0 ? this.jump() : this.slide();
+        }
+      } else if (this.canvas?.getBoundingClientRect) {
+        // Click Zones: left / right / jump / slide
+        const rect = this.canvas.getBoundingClientRect();
+        const clickX = e.clientX - rect.left;
+        const clickY = e.clientY - rect.top;
+        if (clickX < rect.width * 0.33) {
+          this.changeLane(-1);
+        } else if (clickX > rect.width * 0.67) {
+          this.changeLane(1);
+        } else {
+          if (clickY < rect.height * 0.5) {
+            this.jump();
+          } else {
+            this.slide();
+          }
+        }
+      }
+    };
+
+    this.onWheel = (e) => {
+      e.preventDefault();
+      if (e.deltaY < -8) {
+        this.jump();
+      } else if (e.deltaY > 8) {
+        this.slide();
+      }
+    };
+
     this.onTouchStart = (e) => {
-      if (e.touches.length > 0) {
+      if (e.touches?.length > 0) {
         this.touchStartX = e.touches[0].clientX;
         this.touchStartY = e.touches[0].clientY;
       }
     };
 
     this.onTouchEnd = (e) => {
-      if (e.changedTouches.length > 0) {
+      if (e.changedTouches?.length > 0) {
         const dx = e.changedTouches[0].clientX - this.touchStartX;
         const dy = e.changedTouches[0].clientY - this.touchStartY;
         const absX = Math.abs(dx);
         const absY = Math.abs(dy);
 
-        if (Math.max(absX, absY) > 28) {
+        if (Math.max(absX, absY) > 24) {
           if (absX > absY) {
             dx < 0 ? this.changeLane(-1) : this.changeLane(1);
           } else {
@@ -113,8 +169,11 @@ export class HeatEscapeGame {
     };
 
     window.addEventListener('keydown', this.onKeyDown);
-    this.canvas.addEventListener('touchstart', this.onTouchStart, { passive: true });
-    this.canvas.addEventListener('touchend', this.onTouchEnd, { passive: true });
+    this.canvas?.addEventListener?.('pointerdown', this.onPointerDown);
+    this.canvas?.addEventListener?.('pointerup', this.onPointerUp);
+    this.canvas?.addEventListener?.('wheel', this.onWheel, { passive: false });
+    this.canvas?.addEventListener?.('touchstart', this.onTouchStart, { passive: true });
+    this.canvas?.addEventListener?.('touchend', this.onTouchEnd, { passive: true });
   }
 
   changeLane(dir) {
@@ -704,8 +763,11 @@ export class HeatEscapeGame {
     if (this.rafId) cancelAnimationFrame(this.rafId);
     window.removeEventListener('keydown', this.onKeyDown);
     if (this.canvas) {
-      this.canvas.removeEventListener('touchstart', this.onTouchStart);
-      this.canvas.removeEventListener('touchend', this.onTouchEnd);
+      this.canvas.removeEventListener?.('pointerdown', this.onPointerDown);
+      this.canvas.removeEventListener?.('pointerup', this.onPointerUp);
+      this.canvas.removeEventListener?.('wheel', this.onWheel);
+      this.canvas.removeEventListener?.('touchstart', this.onTouchStart);
+      this.canvas.removeEventListener?.('touchend', this.onTouchEnd);
     }
   }
 }
